@@ -11,7 +11,7 @@ export default function RootLayout({ children }) {
         {/* Facebook/WhatsApp/LinkedIn Meta Tags */}
         <meta property="og:title" content="Oakstone Capital Mortgage" />
         <meta property="og:description" content="Your personalized mortgage quote is ready!" />
-        <meta property="og:image" content="https://oakstone-calculator.vercel.app/logo.png" />
+        <meta property="og:image" content="https://oakstone-calculator.vercel.app/og-image.png" />
         <meta property="og:url" content="https://oakstone-calculator.vercel.app" />
         <meta property="og:type" content="website" />
         
@@ -19,7 +19,7 @@ export default function RootLayout({ children }) {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Oakstone Capital Mortgage" />
         <meta name="twitter:description" content="Your personalized mortgage quote is ready!" />
-        <meta name="twitter:image" content="https://oakstone-calculator.vercel.app/logo.png" />
+        <meta name="twitter:image" content="https://oakstone-calculator.vercel.app/og-image.png" />
       </head>
       <body>{children}</body>
     </html>
