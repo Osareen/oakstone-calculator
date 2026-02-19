@@ -1,6 +1,8 @@
 'use client';
+
+import { storage } from '@/lib/storage';
 import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingDown, Calculator, CheckCircle, ArrowRight, Home, Calendar, Percent, CreditCard, Users, Plus, Edit2, Trash2, Phone, Mail, Lock, Info } from 'lucide-react';
+import { DollarSign, TrendingDown, Calculator, CheckCircle, ArrowRight, Home, Calendar, CreditCard, Users, Plus, Edit2, Trash2, Phone, Mail, Lock } from 'lucide-react';
 
 export default function OakstoneQuotePlatform() {
   const [viewMode, setViewMode] = useState('savings');
@@ -14,7 +16,8 @@ export default function OakstoneQuotePlatform() {
   
   const [newLO, setNewLO] = useState({ name: '', nmls: '', phone: '', email: '' });
   
-const [quoteData, setQuoteData] = useState({
+  const [quoteData, setQuoteData] = useState({
+    borrowerName: '', // NEW FIELD
     propertyAddress: '123 Main St, City, ST',
     loanType: 'va_irrrl',
     
@@ -41,26 +44,18 @@ const [quoteData, setQuoteData] = useState({
     // UFMIP Calculator
     ufmipOriginalLoanDate: '',
     ufmipOriginalLoanAmount: '',
-});
+  });
   
   const [showPrincipal, setShowPrincipal] = useState(true);
   const [showEscrow, setShowEscrow] = useState(true);
   const [showFees, setShowFees] = useState(false);
   const [adminMode, setAdminMode] = useState(true);
   
-const TEAM_PASSWORD = 'oakstone2026';
+  const TEAM_PASSWORD = 'oakstone2026';
 
 useEffect(() => { 
-  // Temporary test data until storage works
-  const testTeam = [
-    { id: '1', name: 'Steven Arroyo', nmls: '123456', phone: '555-123-4567', email: 'steven@oakstone.com' },
-    { id: '2', name: 'Blake Belshe', nmls: '789012', phone: '555-987-6543', email: 'blake@oakstone.com' },
-  ];
-  setLoTeam(testTeam);
-  setSelectedLO('1');
-  
-  // Comment out the real storage call for now
-  // loadLOTeam(); 
+  loadLOTeam(); 
+  loadFromUrlParams(); // Add this line
 }, []);
   
   // Auto-populate taxes/insurance from current to new
@@ -75,39 +70,53 @@ useEffect(() => {
   
   const loadLOTeam = async () => {
     try {
-      const result = await window.storage.get('oakstone-lo-team');
+      const result = await storage.get('oakstone-lo-team');
       if (result && result.value) {
-        setLoTeam(JSON.parse(result.value));
+        const team = JSON.parse(result.value);
+        setLoTeam(team);
+        if (team.length > 0) {
+          setSelectedLO(team[0].id);
+        }
       } else {
         const defaultTeam = [
-          { id: '1', name: 'Steven Arroyo', nmls: '', phone: '', email: '' },
-          { id: '2', name: 'Blake Belshe', nmls: '', phone: '', email: '' },
-          { id: '3', name: 'DeVante Bates', nmls: '', phone: '', email: '' },
-          { id: '4', name: 'Paul Alvarez', nmls: '', phone: '', email: '' },
-          { id: '5', name: 'Marco Del Villar', nmls: '', phone: '', email: '' },
-          { id: '6', name: 'Alex Flores', nmls: '', phone: '', email: '' },
-          { id: '7', name: 'John Huizar', nmls: '', phone: '', email: '' },
+          { 
+            id: '1', 
+            name: 'Steven Arroyo', 
+            nmls: '123456', 
+            phone: '555-123-4567', 
+            email: 'steven@oakstone.com' 
+          },
+          { 
+            id: '2', 
+            name: 'Blake Belshe', 
+            nmls: '789012', 
+            phone: '555-987-6543', 
+            email: 'blake@oakstone.com' 
+          },
         ];
+        
         await saveLOTeam(defaultTeam);
         setLoTeam(defaultTeam);
+        setSelectedLO('1');
       }
     } catch (error) {
+      console.error('Error loading team:', error);
       const defaultTeam = [
-        { id: '1', name: 'Steven Arroyo', nmls: '', phone: '', email: '' },
-        { id: '2', name: 'Blake Belshe', nmls: '', phone: '', email: '' },
-        { id: '3', name: 'DeVante Bates', nmls: '', phone: '', email: '' },
-        { id: '4', name: 'Paul Alvarez', nmls: '', phone: '', email: '' },
-        { id: '5', name: 'Marco Del Villar', nmls: '', phone: '', email: '' },
-        { id: '6', name: 'Alex Flores', nmls: '', phone: '', email: '' },
-        { id: '7', name: 'John Huizar', nmls: '', phone: '', email: '' },
+        { id: '1', name: 'Steven Arroyo', nmls: '123456', phone: '555-123-4567', email: 'steven@oakstone.com' },
+        { id: '2', name: 'Blake Belshe', nmls: '789012', phone: '555-987-6543', email: 'blake@oakstone.com' },
       ];
       setLoTeam(defaultTeam);
+      setSelectedLO('1');
     }
   };
   
   const saveLOTeam = async (team) => {
-    try { await window.storage.set('oakstone-lo-team', JSON.stringify(team)); } 
-    catch (error) { console.error('Error saving:', error); }
+    try { 
+      await storage.set('oakstone-lo-team', JSON.stringify(team)); 
+    } 
+    catch (error) { 
+      console.error('Error saving team:', error); 
+    }
   };
   
   const handleTeamPasswordSubmit = () => {
@@ -146,7 +155,7 @@ useEffect(() => {
   const getInitials = (name) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   const getSelectedLOData = () => loTeam.find(lo => lo.id === selectedLO);
   
-  // Mortgage Payment Calculator: M = P[r(1+r)^n]/[(1+r)^n-1]
+  // Mortgage Payment Calculator
   const calculatePI = (loanAmount, annualRate, termYears) => {
     const principal = parseFloat(loanAmount) || 0;
     const rate = parseFloat(annualRate) || 0;
@@ -222,7 +231,7 @@ useEffect(() => {
   const newMonth1Principal = calculateMonth1Principal(quoteData.newLoanAmount, quoteData.newRate, quoteData.newTerm);
   
   const monthlySavings = currentPITI - newPITI;
-  const skipValue = currentPITI * parseInt(quoteData.skipMonths || '0'); // Skip CURRENT payment, not new
+  const skipValue = currentPITI * parseInt(quoteData.skipMonths || '0');
   const escrowRefund = parseFloat(quoteData.escrowRefund) || 0;
   const fees = parseFloat(quoteData.fees) || 0;
   const principalIncrease = newMonth1Principal - currentMonth1Principal;
@@ -236,6 +245,70 @@ useEffect(() => {
     const cleaned = phone.replace(/\D/g, '');
     return cleaned.length === 10 ? `(${cleaned.slice(0,3)}) ${cleaned.slice(3,6)}-${cleaned.slice(6)}` : phone;
   };
+
+
+// ===== ADD MAGIC LINK FUNCTIONS HERE =====
+// Add this new function for Magic Links
+const generateQuoteLink = () => {
+  const params = new URLSearchParams();
+  
+  // Add all the quote data to the URL
+  if (quoteData.borrowerName) params.set('name', quoteData.borrowerName);
+  if (quoteData.propertyAddress && quoteData.propertyAddress !== '123 Main St, City, ST') 
+    params.set('addr', quoteData.propertyAddress);
+  if (quoteData.currentLoanAmount) params.set('ca', quoteData.currentLoanAmount);
+  if (quoteData.currentRate) params.set('cr', quoteData.currentRate);
+  if (quoteData.currentTerm && quoteData.currentTerm !== '30') 
+    params.set('ct', quoteData.currentTerm);
+  if (quoteData.newLoanAmount) params.set('na', quoteData.newLoanAmount);
+  if (quoteData.newRate) params.set('nr', quoteData.newRate);
+  if (quoteData.newTerm && quoteData.newTerm !== '30') 
+    params.set('nt', quoteData.newTerm);
+  if (quoteData.currentTaxes) params.set('tx', quoteData.currentTaxes);
+  if (quoteData.currentInsurance) params.set('ins', quoteData.currentInsurance);
+  if (quoteData.escrowRefund) params.set('esc', quoteData.escrowRefund);
+  if (quoteData.skipMonths && quoteData.skipMonths !== '0') 
+    params.set('skip', quoteData.skipMonths);
+  
+  // 👇 NEW: Add savings amount for the preview message
+  params.set('savings', Math.round(monthlySavings));
+  
+  // 👇 NEW: Use the preview API instead of direct link
+  const url = `${window.location.origin}/api/preview?${params.toString()}`;
+  
+  // Copy to clipboard (same as before)
+  navigator.clipboard.writeText(url).then(() => {
+    alert('✅ Professional quote link copied! It will show a nice preview in WhatsApp.');
+  }).catch(() => {
+    alert('❌ Failed to copy. Please copy this URL manually:\n' + url);
+  });
+};
+
+// Add this new function to read from URL on page load
+const loadFromUrlParams = () => {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    
+    const urlData = {
+      borrowerName: params.get('name') || '',
+      propertyAddress: params.get('addr') || quoteData.propertyAddress,
+      currentLoanAmount: params.get('ca') || quoteData.currentLoanAmount,
+      currentRate: params.get('cr') || quoteData.currentRate,
+      currentTerm: params.get('ct') || quoteData.currentTerm,
+      newLoanAmount: params.get('na') || quoteData.newLoanAmount,
+      newRate: params.get('nr') || quoteData.newRate,
+      newTerm: params.get('nt') || quoteData.newTerm,
+      currentTaxes: params.get('tx') || quoteData.currentTaxes,
+      currentInsurance: params.get('ins') || quoteData.currentInsurance,
+      escrowRefund: params.get('esc') || quoteData.escrowRefund,
+      skipMonths: params.get('skip') || quoteData.skipMonths,
+      loanType: params.get('type') || quoteData.loanType,
+    };
+    
+    setQuoteData(prev => ({ ...prev, ...urlData }));
+  }
+};
+// ===== END OF MAGIC LINK FUNCTIONS =====
   
   const selectedLOData = getSelectedLOData();
   
@@ -426,7 +499,7 @@ useEffect(() => {
               </select>
             </div>
 
-            {/* Loan Type & Property */}
+            {/* Loan Type & Borrower Name - NEW ROW */}
             <div className="grid md:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Loan Type</label>
@@ -437,6 +510,20 @@ useEffect(() => {
                 </select>
               </div>
               <div>
+                <label className="block text-sm text-gray-400 mb-2">Borrower Name</label>
+                <input 
+                  type="text" 
+                  value={quoteData.borrowerName} 
+                  onChange={(e) => handleInputChange('borrowerName', e.target.value)} 
+                  className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" 
+                  placeholder="John Smith" 
+                />
+              </div>
+            </div>
+
+            {/* Property Address */}
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="md:col-span-2">
                 <label className="block text-sm text-gray-400 mb-2">Property Address</label>
                 <input type="text" value={quoteData.propertyAddress} onChange={(e) => handleInputChange('propertyAddress', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="123 Main St, City, ST" />
               </div>
@@ -586,12 +673,39 @@ useEffect(() => {
           <button onClick={() => setViewMode('simple')} className={`flex-1 px-6 py-4 rounded-xl font-semibold transition-all ${viewMode === 'simple' ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-900/50' : 'bg-gray-800 hover:bg-gray-700'}`}>✅ Simple & Clean</button>
         </div>
 
+        {/* 👇 MAGIC LINK BUTTON GOES HERE 👇 */}
+<div className="mb-6 flex justify-center">
+  <button
+    onClick={generateQuoteLink}
+    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl text-white font-semibold transition-all shadow-lg flex items-center gap-2"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+    </svg>
+    Copy Quote Link to Text Client
+  </button>
+</div>
+
         <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-700 shadow-2xl overflow-hidden">
           {quoteData.propertyAddress && (
-            <div className="bg-black/40 px-6 py-4 border-b border-gray-700"><div className="flex items-center gap-2 text-gray-300"><Home className="w-5 h-5" /><span className="font-medium">{quoteData.propertyAddress}</span></div></div>
+            <div className="bg-black/40 px-6 py-4 border-b border-gray-700">
+              <div className="flex items-center gap-2 text-gray-300">
+                <Home className="w-5 h-5" />
+                <span className="font-medium">{quoteData.propertyAddress}</span>
+              </div>
+            </div>
           )}
 
           <div className="p-6 md:p-8">
+            {/* Borrower Name Display - Shows on all views */}
+            {quoteData.borrowerName && (
+              <div className="text-center mb-6">
+                <div className="text-xl text-gray-300">
+                  Quote prepared for <span className="font-bold text-white">{quoteData.borrowerName}</span>
+                </div>
+              </div>
+            )}
+
             {viewMode === 'savings' && (
               <div className="space-y-6">
                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-8">Your <span className="text-green-400">Savings Snapshot</span></h2>
@@ -625,8 +739,14 @@ useEffect(() => {
                 </div>
                 <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
                   <div className="grid md:grid-cols-2 gap-6">
-                    <div><div className="text-gray-400 text-sm mb-2">Current Rate</div><div className="text-2xl font-bold text-red-400">{formatRate(quoteData.currentRate)}</div></div>
-                    <div><div className="text-gray-400 text-sm mb-2">New Rate</div><div className="text-2xl font-bold text-green-400">{formatRate(quoteData.newRate)}</div></div>
+                    <div>
+                      <div className="text-gray-400 text-sm mb-2">Current Rate</div>
+                      <div className="text-2xl font-bold text-red-400">{formatRate(quoteData.currentRate)}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-400 text-sm mb-2">New Rate</div>
+                      <div className="text-2xl font-bold text-green-400">{formatRate(quoteData.newRate)}</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -639,42 +759,77 @@ useEffect(() => {
                   <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
                     <div className="text-center mb-4">
                       <div className="text-sm text-gray-400 mb-2">Current Situation</div>
-                      <div className="flex items-center justify-center gap-2 mb-3"><Percent className="w-5 h-5 text-red-400" /><span className="text-3xl font-bold text-red-400">{formatRate(quoteData.currentRate)}</span></div>
+                      <div className="flex items-center justify-center gap-2 mb-3">
+                        <span className="text-3xl font-bold text-red-400">{formatRate(quoteData.currentRate)}</span>
+                      </div>
                       <div className="text-sm text-gray-400 mb-1">P&I: {formatCurrency(currentPI)}</div>
                       <div className="text-2xl font-bold">{formatCurrency(currentPITI)}<span className="text-sm text-gray-400">/mo</span></div>
                       <div className="text-xs text-gray-500 mt-1">Total PITI</div>
                     </div>
                     {showPrincipal && currentMonth1Principal > 0 && (
-                      <div className="border-t border-gray-700 pt-3"><div className="text-sm text-gray-400">Principal portion (Month 1)</div><div className="text-lg font-semibold">{formatCurrency(currentMonth1Principal)}/mo</div></div>
+                      <div className="border-t border-gray-700 pt-3">
+                        <div className="text-sm text-gray-400">Principal portion (Month 1)</div>
+                        <div className="text-lg font-semibold">{formatCurrency(currentMonth1Principal)}/mo</div>
+                      </div>
                     )}
                   </div>
                   <div className="bg-gradient-to-br from-blue-600/20 to-cyan-600/20 rounded-xl p-6 border border-blue-500/50">
                     <div className="text-center mb-4">
                       <div className="text-sm text-gray-300 mb-2">New Loan Terms</div>
-                      <div className="flex items-center justify-center gap-2 mb-3"><Percent className="w-5 h-5 text-green-400" /><span className="text-3xl font-bold text-green-400">{formatRate(quoteData.newRate)}</span></div>
+                      <div className="flex items-center justify-center gap-2 mb-3">
+                        <span className="text-3xl font-bold text-green-400">{formatRate(quoteData.newRate)}</span>
+                      </div>
                       <div className="text-sm text-gray-300 mb-1">P&I: {formatCurrency(newPI)}</div>
                       <div className="text-2xl font-bold">{formatCurrency(newPITI)}<span className="text-sm text-gray-400">/mo</span></div>
                       <div className="text-xs text-gray-500 mt-1">Total PITI</div>
                     </div>
                     {showPrincipal && newMonth1Principal > 0 && (
-                      <div className="border-t border-blue-500/30 pt-3"><div className="text-sm text-gray-300">Principal portion (Month 1)</div><div className="text-lg font-semibold text-green-400">{formatCurrency(newMonth1Principal)}/mo</div></div>
+                      <div className="border-t border-blue-500/30 pt-3">
+                        <div className="text-sm text-gray-300">Principal portion (Month 1)</div>
+                        <div className="text-lg font-semibold text-green-400">{formatCurrency(newMonth1Principal)}/mo</div>
+                      </div>
                     )}
                   </div>
                 </div>
-                <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-6"><div className="text-center"><div className="text-sm text-green-100 mb-2">Monthly Savings</div><div className="text-4xl font-bold">{formatCurrency(monthlySavings)}</div></div></div>
+                <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-6">
+                  <div className="text-center">
+                    <div className="text-sm text-green-100 mb-2">Monthly Savings</div>
+                    <div className="text-4xl font-bold">{formatCurrency(monthlySavings)}</div>
+                  </div>
+                </div>
                 <div className="grid md:grid-cols-3 gap-4">
                   {parseInt(quoteData.skipMonths) > 0 && (
-                    <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700 text-center"><Calendar className="w-8 h-8 text-blue-400 mx-auto mb-2" /><div className="text-sm text-gray-400 mb-1">Skip {quoteData.skipMonths} Payment{quoteData.skipMonths === '2' ? 's' : ''}</div><div className="text-2xl font-bold text-blue-400">{formatCurrency(skipValue)}</div></div>
+                    <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700 text-center">
+                      <Calendar className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                      <div className="text-sm text-gray-400 mb-1">Skip {quoteData.skipMonths} Payment{quoteData.skipMonths === '2' ? 's' : ''}</div>
+                      <div className="text-2xl font-bold text-blue-400">{formatCurrency(skipValue)}</div>
+                    </div>
                   )}
                   {showEscrow && escrowRefund > 0 && (
-                    <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700 text-center"><DollarSign className="w-8 h-8 text-yellow-400 mx-auto mb-2" /><div className="text-sm text-gray-400 mb-1">Escrow Refund</div><div className="text-2xl font-bold text-yellow-400">{formatCurrency(escrowRefund)}</div></div>
+                    <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700 text-center">
+                      <DollarSign className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+                      <div className="text-sm text-gray-400 mb-1">Escrow Refund</div>
+                      <div className="text-2xl font-bold text-yellow-400">{formatCurrency(escrowRefund)}</div>
+                    </div>
                   )}
                   {showPrincipal && principalIncrease > 0 && (
-                    <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700 text-center"><TrendingDown className="w-8 h-8 text-purple-400 mx-auto mb-2" /><div className="text-sm text-gray-400 mb-1">Extra Principal</div><div className="text-2xl font-bold text-purple-400">{formatCurrency(principalIncrease)}/mo</div></div>
+                    <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700 text-center">
+                      <TrendingDown className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                      <div className="text-sm text-gray-400 mb-1">Extra Principal</div>
+                      <div className="text-2xl font-bold text-purple-400">{formatCurrency(principalIncrease)}/mo</div>
+                    </div>
                   )}
                 </div>
                 {showFees && fees > 0 && (
-                  <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><CreditCard className="w-5 h-5 text-gray-400" /><span className="font-semibold">Estimated Closing Costs</span></div><div className="text-xl font-bold">{formatCurrency(fees)}</div></div></div>
+                  <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 text-gray-400" />
+                        <span className="font-semibold">Estimated Closing Costs</span>
+                      </div>
+                      <div className="text-xl font-bold">{formatCurrency(fees)}</div>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -683,16 +838,46 @@ useEffect(() => {
               <div className="space-y-8">
                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-8">Your <span className="text-purple-400">New Loan</span></h2>
                 <div className="text-center space-y-6">
-                  <div><div className="text-sm text-gray-400 mb-2">Interest Rate</div><div className="text-5xl md:text-6xl font-bold text-purple-400">{formatRate(quoteData.newRate)}</div></div>
-                  <div className="bg-gray-800/50 rounded-2xl p-8 border border-gray-700"><div className="text-sm text-gray-400 mb-2">Monthly Payment (PITI)</div><div className="text-4xl md:text-5xl font-bold">{formatCurrency(newPITI)}</div></div>
-                  <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-6"><div className="text-sm text-green-100 mb-2">You Save</div><div className="text-4xl font-bold">{formatCurrency(monthlySavings)}/mo</div></div>
+                  <div>
+                    <div className="text-sm text-gray-400 mb-2">Interest Rate</div>
+                    <div className="text-5xl md:text-6xl font-bold text-purple-400">{formatRate(quoteData.newRate)}</div>
+                  </div>
+                  <div className="bg-gray-800/50 rounded-2xl p-8 border border-gray-700">
+                    <div className="text-sm text-gray-400 mb-2">Monthly Payment (PITI)</div>
+                    <div className="text-4xl md:text-5xl font-bold">{formatCurrency(newPITI)}</div>
+                  </div>
+                  <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-6">
+                    <div className="text-sm text-green-100 mb-2">You Save</div>
+                    <div className="text-4xl font-bold">{formatCurrency(monthlySavings)}/mo</div>
+                  </div>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-lg"><CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" /><span>Lower rate: {formatRate(quoteData.currentRate)} → {formatRate(quoteData.newRate)}</span></div>
-                  <div className="flex items-center gap-3 text-lg"><CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" /><span>Lower payment: {formatCurrency(currentPITI)} → {formatCurrency(newPITI)}</span></div>
-                  {parseInt(quoteData.skipMonths) > 0 && <div className="flex items-center gap-3 text-lg"><CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" /><span>Skip {quoteData.skipMonths} payment{quoteData.skipMonths === '2' ? 's' : ''} ({formatCurrency(skipValue)})</span></div>}
-                  {showEscrow && escrowRefund > 0 && <div className="flex items-center gap-3 text-lg"><CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" /><span>Escrow refund: {formatCurrency(escrowRefund)}</span></div>}
-                  {showPrincipal && principalIncrease > 0 && <div className="flex items-center gap-3 text-lg"><CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" /><span>Build equity {formatCurrency(principalIncrease)}/mo faster</span></div>}
+                  <div className="flex items-center gap-3 text-lg">
+                    <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" />
+                    <span>Lower rate: {formatRate(quoteData.currentRate)} → {formatRate(quoteData.newRate)}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-lg">
+                    <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" />
+                    <span>Lower payment: {formatCurrency(currentPITI)} → {formatCurrency(newPITI)}</span>
+                  </div>
+                  {parseInt(quoteData.skipMonths) > 0 && (
+                    <div className="flex items-center gap-3 text-lg">
+                      <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" />
+                      <span>Skip {quoteData.skipMonths} payment{quoteData.skipMonths === '2' ? 's' : ''} ({formatCurrency(skipValue)})</span>
+                    </div>
+                  )}
+                  {showEscrow && escrowRefund > 0 && (
+                    <div className="flex items-center gap-3 text-lg">
+                      <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" />
+                      <span>Escrow refund: {formatCurrency(escrowRefund)}</span>
+                    </div>
+                  )}
+                  {showPrincipal && principalIncrease > 0 && (
+                    <div className="flex items-center gap-3 text-lg">
+                      <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" />
+                      <span>Build equity {formatCurrency(principalIncrease)}/mo faster</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
