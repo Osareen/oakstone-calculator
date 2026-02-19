@@ -18,7 +18,7 @@ export async function GET(request) {
   
   // Create the full URL for meta tags
   const fullUrl = `https://oakstone-calculator.vercel.app${redirectUrl}`;
-  const imageUrl = `https://oakstone-calculator.vercel.app/logo.png`;
+  const imageUrl = `https://oakstone-calculator.vercel.app/og-image.png`;
   
   const html = `<!DOCTYPE html>
 <html>
