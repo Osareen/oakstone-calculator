@@ -17,7 +17,7 @@ export default function OakstoneQuotePlatform() {
   const [newLO, setNewLO] = useState({ name: '', nmls: '', phone: '', email: '' });
   
   const [quoteData, setQuoteData] = useState({
-    borrowerName: '', // NEW FIELD
+    borrowerName: '',
     propertyAddress: '123 Main St, City, ST',
     loanType: 'va_irrrl',
     
@@ -53,10 +53,10 @@ export default function OakstoneQuotePlatform() {
   
   const TEAM_PASSWORD = 'oakstone2026';
 
-useEffect(() => { 
-  loadLOTeam(); 
-  loadFromUrlParams(); // Add this line
-}, []);
+  useEffect(() => { 
+    loadLOTeam(); 
+    loadFromUrlParams();
+  }, []);
   
   // Auto-populate taxes/insurance from current to new
   useEffect(() => {
@@ -246,69 +246,62 @@ useEffect(() => {
     return cleaned.length === 10 ? `(${cleaned.slice(0,3)}) ${cleaned.slice(3,6)}-${cleaned.slice(6)}` : phone;
   };
 
-
-// ===== ADD MAGIC LINK FUNCTIONS HERE =====
-// Add this new function for Magic Links
-const generateQuoteLink = () => {
-  const params = new URLSearchParams();
-  
-  // Add all the quote data to the URL
-  if (quoteData.borrowerName) params.set('name', quoteData.borrowerName);
-  if (quoteData.propertyAddress && quoteData.propertyAddress !== '123 Main St, City, ST') 
-    params.set('addr', quoteData.propertyAddress);
-  if (quoteData.currentLoanAmount) params.set('ca', quoteData.currentLoanAmount);
-  if (quoteData.currentRate) params.set('cr', quoteData.currentRate);
-  if (quoteData.currentTerm && quoteData.currentTerm !== '30') 
-    params.set('ct', quoteData.currentTerm);
-  if (quoteData.newLoanAmount) params.set('na', quoteData.newLoanAmount);
-  if (quoteData.newRate) params.set('nr', quoteData.newRate);
-  if (quoteData.newTerm && quoteData.newTerm !== '30') 
-    params.set('nt', quoteData.newTerm);
-  if (quoteData.currentTaxes) params.set('tx', quoteData.currentTaxes);
-  if (quoteData.currentInsurance) params.set('ins', quoteData.currentInsurance);
-  if (quoteData.escrowRefund) params.set('esc', quoteData.escrowRefund);
-  if (quoteData.skipMonths && quoteData.skipMonths !== '0') 
-    params.set('skip', quoteData.skipMonths);
-  
-  // 👇 NEW: Add savings amount for the preview message
-  params.set('savings', Math.round(monthlySavings));
-  
-  // 👇 NEW: Use the preview API instead of direct link
-  const url = `${window.location.origin}/api/preview?${params.toString()}`;
-  
-  // Copy to clipboard (same as before)
-  navigator.clipboard.writeText(url).then(() => {
-    alert('✅ Professional quote link copied! It will show a nice preview in WhatsApp.');
-  }).catch(() => {
-    alert('❌ Failed to copy. Please copy this URL manually:\n' + url);
-  });
-};
-
-// Add this new function to read from URL on page load
-const loadFromUrlParams = () => {
-  if (typeof window !== 'undefined') {
-    const params = new URLSearchParams(window.location.search);
+  // Magic Link Functions
+  const generateQuoteLink = () => {
+    const params = new URLSearchParams();
     
-    const urlData = {
-      borrowerName: params.get('name') || '',
-      propertyAddress: params.get('addr') || quoteData.propertyAddress,
-      currentLoanAmount: params.get('ca') || quoteData.currentLoanAmount,
-      currentRate: params.get('cr') || quoteData.currentRate,
-      currentTerm: params.get('ct') || quoteData.currentTerm,
-      newLoanAmount: params.get('na') || quoteData.newLoanAmount,
-      newRate: params.get('nr') || quoteData.newRate,
-      newTerm: params.get('nt') || quoteData.newTerm,
-      currentTaxes: params.get('tx') || quoteData.currentTaxes,
-      currentInsurance: params.get('ins') || quoteData.currentInsurance,
-      escrowRefund: params.get('esc') || quoteData.escrowRefund,
-      skipMonths: params.get('skip') || quoteData.skipMonths,
-      loanType: params.get('type') || quoteData.loanType,
-    };
+    if (quoteData.borrowerName) params.set('name', quoteData.borrowerName);
+    if (quoteData.propertyAddress && quoteData.propertyAddress !== '123 Main St, City, ST') 
+      params.set('addr', quoteData.propertyAddress);
+    if (quoteData.currentLoanAmount) params.set('ca', quoteData.currentLoanAmount);
+    if (quoteData.currentRate) params.set('cr', quoteData.currentRate);
+    if (quoteData.currentTerm && quoteData.currentTerm !== '30') 
+      params.set('ct', quoteData.currentTerm);
+    if (quoteData.newLoanAmount) params.set('na', quoteData.newLoanAmount);
+    if (quoteData.newRate) params.set('nr', quoteData.newRate);
+    if (quoteData.newTerm && quoteData.newTerm !== '30') 
+      params.set('nt', quoteData.newTerm);
+    if (quoteData.currentTaxes) params.set('tx', quoteData.currentTaxes);
+    if (quoteData.currentInsurance) params.set('ins', quoteData.currentInsurance);
+    if (quoteData.escrowRefund) params.set('esc', quoteData.escrowRefund);
+    if (quoteData.skipMonths && quoteData.skipMonths !== '0') 
+      params.set('skip', quoteData.skipMonths);
     
-    setQuoteData(prev => ({ ...prev, ...urlData }));
-  }
-};
-// ===== END OF MAGIC LINK FUNCTIONS =====
+    params.set('savings', Math.round(monthlySavings));
+    params.set('cb', Date.now()); // Cache buster
+    
+    const url = `${window.location.origin}/api/preview?${params.toString()}`;
+    
+    navigator.clipboard.writeText(url).then(() => {
+      alert('✅ Quote link copied to clipboard! You can now text this to your client.');
+    }).catch(() => {
+      alert('❌ Failed to copy. Please copy this URL manually:\n' + url);
+    });
+  };
+
+  const loadFromUrlParams = () => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      
+      const urlData = {
+        borrowerName: params.get('name') || '',
+        propertyAddress: params.get('addr') || quoteData.propertyAddress,
+        currentLoanAmount: params.get('ca') || quoteData.currentLoanAmount,
+        currentRate: params.get('cr') || quoteData.currentRate,
+        currentTerm: params.get('ct') || quoteData.currentTerm,
+        newLoanAmount: params.get('na') || quoteData.newLoanAmount,
+        newRate: params.get('nr') || quoteData.newRate,
+        newTerm: params.get('nt') || quoteData.newTerm,
+        currentTaxes: params.get('tx') || quoteData.currentTaxes,
+        currentInsurance: params.get('ins') || quoteData.currentInsurance,
+        escrowRefund: params.get('esc') || quoteData.escrowRefund,
+        skipMonths: params.get('skip') || quoteData.skipMonths,
+        loanType: params.get('type') || quoteData.loanType,
+      };
+      
+      setQuoteData(prev => ({ ...prev, ...urlData }));
+    }
+  };
   
   const selectedLOData = getSelectedLOData();
   
@@ -499,7 +492,7 @@ const loadFromUrlParams = () => {
               </select>
             </div>
 
-            {/* Loan Type & Borrower Name - NEW ROW */}
+            {/* Loan Type & Borrower Name */}
             <div className="grid md:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Loan Type</label>
@@ -673,18 +666,17 @@ const loadFromUrlParams = () => {
           <button onClick={() => setViewMode('simple')} className={`flex-1 px-6 py-4 rounded-xl font-semibold transition-all ${viewMode === 'simple' ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-900/50' : 'bg-gray-800 hover:bg-gray-700'}`}>✅ Simple & Clean</button>
         </div>
 
-        {/* 👇 MAGIC LINK BUTTON GOES HERE 👇 */}
-<div className="mb-6 flex justify-center">
-  <button
-    onClick={generateQuoteLink}
-    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl text-white font-semibold transition-all shadow-lg flex items-center gap-2"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-    </svg>
-    Copy Quote Link to Text Client
-  </button>
-</div>
+        <div className="mb-6 flex justify-center">
+          <button
+            onClick={generateQuoteLink}
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl text-white font-semibold transition-all shadow-lg flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            Copy Quote Link to Text Client
+          </button>
+        </div>
 
         <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-700 shadow-2xl overflow-hidden">
           {quoteData.propertyAddress && (
@@ -697,7 +689,7 @@ const loadFromUrlParams = () => {
           )}
 
           <div className="p-6 md:p-8">
-            {/* Borrower Name Display - Shows on all views */}
+            {/* Borrower Name Display */}
             {quoteData.borrowerName && (
               <div className="text-center mb-6">
                 <div className="text-xl text-gray-300">
@@ -882,6 +874,47 @@ const loadFromUrlParams = () => {
               </div>
             )}
 
+{/* GOOGLE REVIEWS SECTION */}
+<div className="mt-8 pt-8 border-t border-gray-700">
+  <div className="bg-gradient-to-br from-yellow-600/20 to-amber-600/20 rounded-xl p-6 border border-yellow-500/50 text-center">
+    <div className="flex justify-center mb-4">
+      {[...Array(5)].map((_, i) => (
+        <svg key={i} className="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+        </svg>
+      ))}
+    </div>
+    <h3 className="text-2xl font-bold mb-2">Trusted by Homeowners Like You</h3>
+    <p className="text-gray-300 mb-4">Join satisfied clients who saved with Oakstone Capital</p>
+    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      <a 
+        href="https://www.google.com/search?q=Oakstone+Capital+Mortgage+LLC&rlz=1C1VDKB_enUS1127US1127&sxsrf=ANbL-n5KHJizAfW-E3Hqxk3iBHu_eCJ1Wg:1771470986502&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOQvueYEpKpGuY65lm4VxBNWIZCLnn3K5EjDnXFlluRlc0zGxQ9ooC6lTQNCYqCNGOkiPgok%3D&uds=ALYpb_kVApVhulIiP3ocP-9qIyr_nLMhYA1Ohq_p5XieA1NNSRpI3DEMN6u4_Og7CyRwe6lz47cWTHv1VuZk8Nqaskrx_Cht6SvAJiGcz9Odwe6yA1jpo8L_a-YmoV8Lq_s71cj8tmTT"
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-white font-semibold transition-all flex items-center justify-center gap-2"
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/>
+        </svg>
+        Read Our Google Reviews
+      </a>
+      <a 
+        href="https://search.google.com/local/writereview?placeid=ChIJN8AU3gS3wokRp6XIIb5ZkBs"
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-semibold transition-all flex items-center justify-center gap-2"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        Write a Review
+      </a>
+    </div>
+    <p className="text-sm text-gray-400 mt-4">⭐⭐⭐⭐⭐ 5.0 (27 reviews)</p>
+  </div>
+</div>
+
+            {/* Apply Now Button */}
             <div className="mt-8 pt-8 border-t border-gray-700">
               <a href="https://2585868.my1003app.com/1576672/register?time=1771103083263" target="_blank" rel="noopener noreferrer" className="block w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold text-xl py-5 px-8 rounded-xl transition-all shadow-lg hover:shadow-xl text-center">
                 <span className="flex items-center justify-center gap-3">Apply Now <ArrowRight className="w-6 h-6" /></span>
@@ -889,6 +922,7 @@ const loadFromUrlParams = () => {
               <p className="text-center text-sm text-gray-400 mt-4">NMLS #2585868 • Secure application • Takes 5 minutes</p>
             </div>
 
+            {/* Loan Officer Info */}
             {selectedLOData && (
               <div className="mt-6 bg-gradient-to-r from-gray-800/80 to-gray-700/80 rounded-xl p-6 border border-gray-600">
                 <div className="flex items-center gap-4">
