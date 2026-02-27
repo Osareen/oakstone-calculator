@@ -50,6 +50,7 @@ export default function OakstoneQuotePlatform() {
   const [showEscrow, setShowEscrow] = useState(true);
   const [showFees, setShowFees] = useState(false);
   const [adminMode, setAdminMode] = useState(true);
+  const [isClientView, setIsClientView] = useState(false);
   
   const TEAM_PASSWORD = 'oakstone2026';
 
@@ -247,61 +248,73 @@ export default function OakstoneQuotePlatform() {
   };
 
   // Magic Link Functions
-  const generateQuoteLink = () => {
-    const params = new URLSearchParams();
-    
-    if (quoteData.borrowerName) params.set('name', quoteData.borrowerName);
-    if (quoteData.propertyAddress && quoteData.propertyAddress !== '123 Main St, City, ST') 
-      params.set('addr', quoteData.propertyAddress);
-    if (quoteData.currentLoanAmount) params.set('ca', quoteData.currentLoanAmount);
-    if (quoteData.currentRate) params.set('cr', quoteData.currentRate);
-    if (quoteData.currentTerm && quoteData.currentTerm !== '30') 
-      params.set('ct', quoteData.currentTerm);
-    if (quoteData.newLoanAmount) params.set('na', quoteData.newLoanAmount);
-    if (quoteData.newRate) params.set('nr', quoteData.newRate);
-    if (quoteData.newTerm && quoteData.newTerm !== '30') 
-      params.set('nt', quoteData.newTerm);
-    if (quoteData.currentTaxes) params.set('tx', quoteData.currentTaxes);
-    if (quoteData.currentInsurance) params.set('ins', quoteData.currentInsurance);
-    if (quoteData.escrowRefund) params.set('esc', quoteData.escrowRefund);
-    if (quoteData.skipMonths && quoteData.skipMonths !== '0') 
-      params.set('skip', quoteData.skipMonths);
-    
-    params.set('savings', Math.round(monthlySavings));
-    params.set('cb', Date.now()); // Cache buster
-    
-    const url = `${window.location.origin}/api/preview?${params.toString()}`;
-    
-    navigator.clipboard.writeText(url).then(() => {
-      alert('✅ Quote link copied to clipboard! You can now text this to your client.');
-    }).catch(() => {
-      alert('❌ Failed to copy. Please copy this URL manually:\n' + url);
-    });
-  };
+const generateQuoteLink = () => {
+  const params = new URLSearchParams();
+  
+  // Add all quote data
+  if (quoteData.borrowerName) params.set('name', quoteData.borrowerName);
+  if (quoteData.propertyAddress && quoteData.propertyAddress !== '123 Main St, City, ST') 
+    params.set('addr', quoteData.propertyAddress);
+  if (quoteData.currentLoanAmount) params.set('ca', quoteData.currentLoanAmount);
+  if (quoteData.currentRate) params.set('cr', quoteData.currentRate);
+  if (quoteData.currentTerm && quoteData.currentTerm !== '30') 
+    params.set('ct', quoteData.currentTerm);
+  if (quoteData.newLoanAmount) params.set('na', quoteData.newLoanAmount);
+  if (quoteData.newRate) params.set('nr', quoteData.newRate);
+  if (quoteData.newTerm && quoteData.newTerm !== '30') 
+    params.set('nt', quoteData.newTerm);
+  if (quoteData.currentTaxes) params.set('tx', quoteData.currentTaxes);
+  if (quoteData.currentInsurance) params.set('ins', quoteData.currentInsurance);
+  if (quoteData.escrowRefund) params.set('esc', quoteData.escrowRefund);
+  if (quoteData.skipMonths && quoteData.skipMonths !== '0') 
+    params.set('skip', quoteData.skipMonths);
+  
+  // Add savings and cache buster
+  params.set('savings', Math.round(monthlySavings));
+  params.set('cb', Date.now());
+  
+  // 👇 CRITICAL - Add client view parameter
+  params.set('view', 'client');
+  
+  const url = `${window.location.origin}/api/preview?${params.toString()}`;
+  
+  navigator.clipboard.writeText(url).then(() => {
+    alert('✅ Client link copied! They will see a clean, read-only view.');
+  }).catch(() => {
+    alert('❌ Failed to copy. Please copy this URL manually:\n' + url);
+  });
+};
 
-  const loadFromUrlParams = () => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      
-      const urlData = {
-        borrowerName: params.get('name') || '',
-        propertyAddress: params.get('addr') || quoteData.propertyAddress,
-        currentLoanAmount: params.get('ca') || quoteData.currentLoanAmount,
-        currentRate: params.get('cr') || quoteData.currentRate,
-        currentTerm: params.get('ct') || quoteData.currentTerm,
-        newLoanAmount: params.get('na') || quoteData.newLoanAmount,
-        newRate: params.get('nr') || quoteData.newRate,
-        newTerm: params.get('nt') || quoteData.newTerm,
-        currentTaxes: params.get('tx') || quoteData.currentTaxes,
-        currentInsurance: params.get('ins') || quoteData.currentInsurance,
-        escrowRefund: params.get('esc') || quoteData.escrowRefund,
-        skipMonths: params.get('skip') || quoteData.skipMonths,
-        loanType: params.get('type') || quoteData.loanType,
-      };
-      
-      setQuoteData(prev => ({ ...prev, ...urlData }));
-    }
-  };
+const loadFromUrlParams = () => {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    console.log('URL Params:', params.toString());
+    
+    // Check if this is a client view link
+    const clientView = params.get('view') === 'client';
+    console.log('Is Client View:', clientView);
+    
+    setIsClientView(clientView);
+    
+    const urlData = {
+      borrowerName: params.get('name') || '',
+      propertyAddress: params.get('addr') || quoteData.propertyAddress,
+      currentLoanAmount: params.get('ca') || quoteData.currentLoanAmount,
+      currentRate: params.get('cr') || quoteData.currentRate,
+      currentTerm: params.get('ct') || quoteData.currentTerm,
+      newLoanAmount: params.get('na') || quoteData.newLoanAmount,
+      newRate: params.get('nr') || quoteData.newRate,
+      newTerm: params.get('nt') || quoteData.newTerm,
+      currentTaxes: params.get('tx') || quoteData.currentTaxes,
+      currentInsurance: params.get('ins') || quoteData.currentInsurance,
+      escrowRefund: params.get('esc') || quoteData.escrowRefund,
+      skipMonths: params.get('skip') || quoteData.skipMonths,
+      loanType: params.get('type') || quoteData.loanType,
+    };
+    
+    setQuoteData(prev => ({ ...prev, ...urlData }));
+  }
+};
   
   const selectedLOData = getSelectedLOData();
   
@@ -479,204 +492,211 @@ export default function OakstoneQuotePlatform() {
       )}
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {adminMode && (
-          <div className="mb-8 bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-6 shadow-2xl">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><Calculator className="w-6 h-6 text-blue-400" /> Quote Builder</h2>
+{/* Hide Quote Builder in client view */}
+{!isClientView && adminMode && (
+  <div className="mb-8 bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-6 shadow-2xl">
+    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><Calculator className="w-6 h-6 text-blue-400" /> Quote Builder</h2>
 
-            {/* LO Selector */}
-            <div className="mb-6 bg-gray-900/50 rounded-xl p-4 border border-gray-700">
-              <label className="block text-sm text-gray-400 mb-2">Select Loan Officer *</label>
-              <select value={selectedLO} onChange={(e) => setSelectedLO(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500">
-                <option value="">Choose your name...</option>
-                {loTeam.map((lo) => <option key={lo.id} value={lo.id}>{lo.name} {lo.nmls && `(NMLS #${lo.nmls})`}</option>)}
+    {/* LO Selector */}
+    <div className="mb-6 bg-gray-900/50 rounded-xl p-4 border border-gray-700">
+      <label className="block text-sm text-gray-400 mb-2">Select Loan Officer *</label>
+      <select value={selectedLO} onChange={(e) => setSelectedLO(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500">
+        <option value="">Choose your name...</option>
+        {loTeam.map((lo) => <option key={lo.id} value={lo.id}>{lo.name} {lo.nmls && `(NMLS #${lo.nmls})`}</option>)}
+      </select>
+    </div>
+
+    {/* Loan Type & Property */}
+    <div className="grid md:grid-cols-2 gap-4 mb-6">
+      <div>
+        <label className="block text-sm text-gray-400 mb-2">Loan Type</label>
+        <select value={quoteData.loanType} onChange={(e) => handleInputChange('loanType', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500">
+          <option value="va_irrrl">VA IRRRL</option>
+          <option value="fha_streamline">FHA Streamline</option>
+          <option value="conventional">Conventional</option>
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm text-gray-400 mb-2">Borrower Name</label>
+        <input 
+          type="text" 
+          value={quoteData.borrowerName} 
+          onChange={(e) => handleInputChange('borrowerName', e.target.value)} 
+          className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" 
+          placeholder="John Smith" 
+        />
+      </div>
+    </div>
+
+    {/* Property Address */}
+    <div className="grid md:grid-cols-2 gap-4 mb-6">
+      <div className="md:col-span-2">
+        <label className="block text-sm text-gray-400 mb-2">Property Address</label>
+        <input type="text" value={quoteData.propertyAddress} onChange={(e) => handleInputChange('propertyAddress', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="123 Main St, City, ST" />
+      </div>
+    </div>
+
+    <div className="grid md:grid-cols-2 gap-6">
+      {/* Current Loan */}
+      <div className="bg-gray-900/50 rounded-xl p-5 border border-gray-700">
+        <h3 className="font-semibold text-lg mb-4 text-red-400">Current Loan</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Loan Amount ($)</label>
+            <input type="number" value={quoteData.currentLoanAmount} onChange={(e) => handleInputChange('currentLoanAmount', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="350000" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Rate (%)</label>
+              <input type="number" step="0.001" value={quoteData.currentRate} onChange={(e) => handleInputChange('currentRate', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="6.500" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Term</label>
+              <select value={quoteData.currentTerm} onChange={(e) => handleInputChange('currentTerm', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500">
+                <option value="30">30 Year</option>
+                <option value="20">20 Year</option>
+                <option value="15">15 Year</option>
               </select>
             </div>
-
-            {/* Loan Type & Borrower Name */}
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Loan Type</label>
-                <select value={quoteData.loanType} onChange={(e) => handleInputChange('loanType', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500">
-                  <option value="va_irrrl">VA IRRRL</option>
-                  <option value="fha_streamline">FHA Streamline</option>
-                  <option value="conventional">Conventional</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Borrower Name</label>
-                <input 
-                  type="text" 
-                  value={quoteData.borrowerName} 
-                  onChange={(e) => handleInputChange('borrowerName', e.target.value)} 
-                  className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" 
-                  placeholder="John Smith" 
-                />
-              </div>
+          </div>
+          <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-700/30">
+            <div className="text-xs text-gray-400 mb-1">P&I (Auto-Calculated)</div>
+            <div className="text-xl font-bold text-blue-400">{formatCurrency(currentPI)}/mo</div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Taxes/Mo ($)</label>
+              <input type="number" value={quoteData.currentTaxes} onChange={(e) => handleInputChange('currentTaxes', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="300" />
             </div>
-
-            {/* Property Address */}
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="md:col-span-2">
-                <label className="block text-sm text-gray-400 mb-2">Property Address</label>
-                <input type="text" value={quoteData.propertyAddress} onChange={(e) => handleInputChange('propertyAddress', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="123 Main St, City, ST" />
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Current Loan */}
-              <div className="bg-gray-900/50 rounded-xl p-5 border border-gray-700">
-                <h3 className="font-semibold text-lg mb-4 text-red-400">Current Loan</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Loan Amount ($)</label>
-                    <input type="number" value={quoteData.currentLoanAmount} onChange={(e) => handleInputChange('currentLoanAmount', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="350000" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-2">Rate (%)</label>
-                      <input type="number" step="0.001" value={quoteData.currentRate} onChange={(e) => handleInputChange('currentRate', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="6.500" />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-2">Term</label>
-                      <select value={quoteData.currentTerm} onChange={(e) => handleInputChange('currentTerm', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="30">30 Year</option>
-                        <option value="20">20 Year</option>
-                        <option value="15">15 Year</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-700/30">
-                    <div className="text-xs text-gray-400 mb-1">P&I (Auto-Calculated)</div>
-                    <div className="text-xl font-bold text-blue-400">{formatCurrency(currentPI)}/mo</div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-2">Taxes/Mo ($)</label>
-                      <input type="number" value={quoteData.currentTaxes} onChange={(e) => handleInputChange('currentTaxes', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="300" />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-2">Insurance/Mo ($)</label>
-                      <input type="number" value={quoteData.currentInsurance} onChange={(e) => handleInputChange('currentInsurance', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="150" />
-                    </div>
-                  </div>
-                  {showMI && (
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-2">MI/Mo ($)</label>
-                      <input type="number" value={quoteData.currentMI} onChange={(e) => handleInputChange('currentMI', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="200" />
-                    </div>
-                  )}
-                  <div className="bg-red-900/20 rounded-lg p-3 border border-red-700/30">
-                    <div className="text-xs text-gray-400 mb-1">Total PITI</div>
-                    <div className="text-2xl font-bold text-red-400">{formatCurrency(currentPITI)}/mo</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* New Loan */}
-              <div className="bg-gray-900/50 rounded-xl p-5 border border-green-700">
-                <h3 className="font-semibold text-lg mb-4 text-green-400">New Loan</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Loan Amount ($)</label>
-                    <input type="number" value={quoteData.newLoanAmount} onChange={(e) => handleInputChange('newLoanAmount', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="350000" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-2">Rate (%)</label>
-                      <input type="number" step="0.001" value={quoteData.newRate} onChange={(e) => handleInputChange('newRate', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="5.250" />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-2">Term</label>
-                      <select value={quoteData.newTerm} onChange={(e) => handleInputChange('newTerm', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="30">30 Year</option>
-                        <option value="20">20 Year</option>
-                        <option value="15">15 Year</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-700/30">
-                    <div className="text-xs text-gray-400 mb-1">P&I (Auto-Calculated)</div>
-                    <div className="text-xl font-bold text-blue-400">{formatCurrency(newPI)}/mo</div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-2">Taxes/Mo ($)</label>
-                      <input type="number" value={quoteData.newTaxes} onChange={(e) => handleInputChange('newTaxes', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="300" />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-2">Insurance/Mo ($)</label>
-                      <input type="number" value={quoteData.newInsurance} onChange={(e) => handleInputChange('newInsurance', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="150" />
-                    </div>
-                  </div>
-                  {showMI && (
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-2">MI/Mo ($)</label>
-                      <input type="number" value={quoteData.newMI} onChange={(e) => handleInputChange('newMI', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="200" />
-                    </div>
-                  )}
-                  <div className="bg-green-900/20 rounded-lg p-3 border border-green-700/30">
-                    <div className="text-xs text-gray-400 mb-1">Total PITI</div>
-                    <div className="text-2xl font-bold text-green-400">{formatCurrency(newPITI)}/mo</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Options */}
-            <div className="grid md:grid-cols-3 gap-4 mt-6">
-              {showEscrow && (
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Escrow Refund ($)</label>
-                  <input type="number" value={quoteData.escrowRefund} onChange={(e) => handleInputChange('escrowRefund', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="2400" />
-                  {quoteData.loanType === 'fha_streamline' && (
-                    <button onClick={() => setShowUFMIPCalc(true)} className="mt-2 text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
-                      <Calculator className="w-3 h-3" /> Calculate UFMIP Refund
-                    </button>
-                  )}
-                </div>
-              )}
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Skip Payments</label>
-                <select value={quoteData.skipMonths} onChange={(e) => handleInputChange('skipMonths', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500">
-                  <option value="0">No Skip</option>
-                  <option value="1">Skip 1 Month</option>
-                  <option value="2">Skip 2 Months</option>
-                </select>
-              </div>
-              {showFees && (
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Total Fees ($)</label>
-                  <input type="number" value={quoteData.fees} onChange={(e) => handleInputChange('fees', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="3200" />
-                </div>
-              )}
-            </div>
-
-            {/* Toggles */}
-            <div className="flex flex-wrap gap-4 pt-4 border-t border-gray-700 mt-6">
-              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={showPrincipal} onChange={(e) => setShowPrincipal(e.target.checked)} className="w-4 h-4 rounded bg-gray-900 border-gray-600" /><span className="text-sm text-gray-300">Show Principal</span></label>
-              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={showEscrow} onChange={(e) => setShowEscrow(e.target.checked)} className="w-4 h-4 rounded bg-gray-900 border-gray-600" /><span className="text-sm text-gray-300">Show Escrow Refund</span></label>
-              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={showFees} onChange={(e) => setShowFees(e.target.checked)} className="w-4 h-4 rounded bg-gray-900 border-gray-600" /><span className="text-sm text-gray-300">Show Fees</span></label>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Insurance/Mo ($)</label>
+              <input type="number" value={quoteData.currentInsurance} onChange={(e) => handleInputChange('currentInsurance', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="150" />
             </div>
           </div>
-        )}
-
-        <div className="mb-8 flex flex-col sm:flex-row gap-3">
-          <button onClick={() => setViewMode('savings')} className={`flex-1 px-6 py-4 rounded-xl font-semibold transition-all ${viewMode === 'savings' ? 'bg-gradient-to-r from-green-600 to-emerald-600 shadow-lg shadow-green-900/50' : 'bg-gray-800 hover:bg-gray-700'}`}>💰 Maximum Savings</button>
-          <button onClick={() => setViewMode('breakdown')} className={`flex-1 px-6 py-4 rounded-xl font-semibold transition-all ${viewMode === 'breakdown' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 shadow-lg shadow-blue-900/50' : 'bg-gray-800 hover:bg-gray-700'}`}>📊 Full Breakdown</button>
-          <button onClick={() => setViewMode('simple')} className={`flex-1 px-6 py-4 rounded-xl font-semibold transition-all ${viewMode === 'simple' ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-900/50' : 'bg-gray-800 hover:bg-gray-700'}`}>✅ Simple & Clean</button>
+          {showMI && (
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">MI/Mo ($)</label>
+              <input type="number" value={quoteData.currentMI} onChange={(e) => handleInputChange('currentMI', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="200" />
+            </div>
+          )}
+          <div className="bg-red-900/20 rounded-lg p-3 border border-red-700/30">
+            <div className="text-xs text-gray-400 mb-1">Total PITI</div>
+            <div className="text-2xl font-bold text-red-400">{formatCurrency(currentPITI)}/mo</div>
+          </div>
         </div>
+      </div>
 
-        <div className="mb-6 flex justify-center">
-          <button
-            onClick={generateQuoteLink}
-            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl text-white font-semibold transition-all shadow-lg flex items-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-            </svg>
-            Copy Quote Link to Text Client
-          </button>
+      {/* New Loan */}
+      <div className="bg-gray-900/50 rounded-xl p-5 border border-green-700">
+        <h3 className="font-semibold text-lg mb-4 text-green-400">New Loan</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Loan Amount ($)</label>
+            <input type="number" value={quoteData.newLoanAmount} onChange={(e) => handleInputChange('newLoanAmount', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="350000" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Rate (%)</label>
+              <input type="number" step="0.001" value={quoteData.newRate} onChange={(e) => handleInputChange('newRate', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="5.250" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Term</label>
+              <select value={quoteData.newTerm} onChange={(e) => handleInputChange('newTerm', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500">
+                <option value="30">30 Year</option>
+                <option value="20">20 Year</option>
+                <option value="15">15 Year</option>
+              </select>
+            </div>
+          </div>
+          <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-700/30">
+            <div className="text-xs text-gray-400 mb-1">P&I (Auto-Calculated)</div>
+            <div className="text-xl font-bold text-blue-400">{formatCurrency(newPI)}/mo</div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Taxes/Mo ($)</label>
+              <input type="number" value={quoteData.newTaxes} onChange={(e) => handleInputChange('newTaxes', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="300" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Insurance/Mo ($)</label>
+              <input type="number" value={quoteData.newInsurance} onChange={(e) => handleInputChange('newInsurance', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="150" />
+            </div>
+          </div>
+          {showMI && (
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">MI/Mo ($)</label>
+              <input type="number" value={quoteData.newMI} onChange={(e) => handleInputChange('newMI', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="200" />
+            </div>
+          )}
+          <div className="bg-green-900/20 rounded-lg p-3 border border-green-700/30">
+            <div className="text-xs text-gray-400 mb-1">Total PITI</div>
+            <div className="text-2xl font-bold text-green-400">{formatCurrency(newPITI)}/mo</div>
+          </div>
         </div>
+      </div>
+    </div>
+
+    {/* Additional Options */}
+    <div className="grid md:grid-cols-3 gap-4 mt-6">
+      {showEscrow && (
+        <div>
+          <label className="block text-sm text-gray-400 mb-2">Escrow Refund ($)</label>
+          <input type="number" value={quoteData.escrowRefund} onChange={(e) => handleInputChange('escrowRefund', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="2400" />
+          {quoteData.loanType === 'fha_streamline' && (
+            <button onClick={() => setShowUFMIPCalc(true)} className="mt-2 text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
+              <Calculator className="w-3 h-3" /> Calculate UFMIP Refund
+            </button>
+          )}
+        </div>
+      )}
+      <div>
+        <label className="block text-sm text-gray-400 mb-2">Skip Payments</label>
+        <select value={quoteData.skipMonths} onChange={(e) => handleInputChange('skipMonths', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500">
+          <option value="0">No Skip</option>
+          <option value="1">Skip 1 Month</option>
+          <option value="2">Skip 2 Months</option>
+        </select>
+      </div>
+      {showFees && (
+        <div>
+          <label className="block text-sm text-gray-400 mb-2">Total Fees ($)</label>
+          <input type="number" value={quoteData.fees} onChange={(e) => handleInputChange('fees', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500" placeholder="3200" />
+        </div>
+      )}
+    </div>
+
+    {/* Toggles */}
+    <div className="flex flex-wrap gap-4 pt-4 border-t border-gray-700 mt-6">
+      <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={showPrincipal} onChange={(e) => setShowPrincipal(e.target.checked)} className="w-4 h-4 rounded bg-gray-900 border-gray-600" /><span className="text-sm text-gray-300">Show Principal</span></label>
+      <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={showEscrow} onChange={(e) => setShowEscrow(e.target.checked)} className="w-4 h-4 rounded bg-gray-900 border-gray-600" /><span className="text-sm text-gray-300">Show Escrow Refund</span></label>
+      <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={showFees} onChange={(e) => setShowFees(e.target.checked)} className="w-4 h-4 rounded bg-gray-900 border-gray-600" /><span className="text-sm text-gray-300">Show Fees</span></label>
+    </div>
+  </div>
+)}
+
+{/* Hide view mode buttons in client view */}
+{!isClientView && (
+  <div className="mb-8 flex flex-col sm:flex-row gap-3">
+    <button onClick={() => setViewMode('savings')} className={`flex-1 px-6 py-4 rounded-xl font-semibold transition-all ${viewMode === 'savings' ? 'bg-gradient-to-r from-green-600 to-emerald-600 shadow-lg shadow-green-900/50' : 'bg-gray-800 hover:bg-gray-700'}`}>💰 Maximum Savings</button>
+    <button onClick={() => setViewMode('breakdown')} className={`flex-1 px-6 py-4 rounded-xl font-semibold transition-all ${viewMode === 'breakdown' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 shadow-lg shadow-blue-900/50' : 'bg-gray-800 hover:bg-gray-700'}`}>📊 Full Breakdown</button>
+    <button onClick={() => setViewMode('simple')} className={`flex-1 px-6 py-4 rounded-xl font-semibold transition-all ${viewMode === 'simple' ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-900/50' : 'bg-gray-800 hover:bg-gray-700'}`}>✅ Simple & Clean</button>
+  </div>
+)}
+
+{/* Hide copy link button in client view */}
+{!isClientView && (
+  <div className="mb-6 flex justify-center">
+    <button
+      onClick={generateQuoteLink}
+      className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl text-white font-semibold transition-all shadow-lg flex items-center gap-2"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+      </svg>
+      Copy Quote Link to Text Client
+    </button>
+  </div>
+)}
 
         <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-700 shadow-2xl overflow-hidden">
           {quoteData.propertyAddress && (
@@ -690,13 +710,25 @@ export default function OakstoneQuotePlatform() {
 
           <div className="p-6 md:p-8">
             {/* Borrower Name Display */}
-            {quoteData.borrowerName && (
-              <div className="text-center mb-6">
-                <div className="text-xl text-gray-300">
-                  Quote prepared for <span className="font-bold text-white">{quoteData.borrowerName}</span>
-                </div>
-              </div>
-            )}
+{/* Borrower Name Display - Different for client view */}
+{quoteData.borrowerName && !isClientView && (
+  <div className="text-center mb-6">
+    <div className="text-xl text-gray-300">
+      Quote prepared for <span className="font-bold text-white">{quoteData.borrowerName}</span>
+    </div>
+  </div>
+)}
+
+{/* Client View Welcome Message */}
+{isClientView && quoteData.borrowerName && (
+  <div className="text-center mb-8">
+    <div className="text-2xl font-bold text-green-400 mb-2">Your Personalized Quote</div>
+    <div className="text-xl text-gray-300">
+      Hello <span className="font-bold text-white">{quoteData.borrowerName}</span>,
+    </div>
+    <div className="text-gray-400 mt-2">Here's your savings breakdown from Oakstone Capital</div>
+  </div>
+)}
 
             {viewMode === 'savings' && (
               <div className="space-y-6">

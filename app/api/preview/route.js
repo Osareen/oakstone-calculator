@@ -4,17 +4,9 @@ export async function GET(request) {
   // Get parameters with defaults
   const name = searchParams.get('name') || 'a client';
   const savings = searchParams.get('savings') || '280';
-  const ca = searchParams.get('ca') || '350000';
-  const cr = searchParams.get('cr') || '6.5';
-  const na = searchParams.get('na') || '350000';
-  const nr = searchParams.get('nr') || '5.25';
-  const tx = searchParams.get('tx') || '300';
-  const ins = searchParams.get('ins') || '150';
-  const esc = searchParams.get('esc') || '2400';
-  const skip = searchParams.get('skip') || '2';
   
-  // Build the redirect URL with all parameters
-  const redirectUrl = `/?name=${encodeURIComponent(name)}&ca=${ca}&cr=${cr}&na=${na}&nr=${nr}&tx=${tx}&ins=${ins}&esc=${esc}&skip=${skip}`;
+  // Build the redirect URL with ALL parameters (including view=client)
+  const redirectUrl = `/?${searchParams.toString()}`;
   
   // Create the full URL for meta tags
   const fullUrl = `https://oakstone-calculator.vercel.app${redirectUrl}`;
@@ -65,10 +57,6 @@ export async function GET(request) {
       max-width: 600px;
       padding: 2rem;
     }
-    .logo {
-      width: 200px;
-      margin-bottom: 2rem;
-    }
     h1 {
       font-size: 2rem;
       margin-bottom: 1rem;
@@ -89,7 +77,6 @@ export async function GET(request) {
 </head>
 <body>
   <div class="container">
-    <!-- You can add your logo here if you want -->
     <h1>💰 Your Quote is Ready!</h1>
     <p>Hello <strong>${name}</strong>,</p>
     <p>Your personalized mortgage quote shows:</p>
